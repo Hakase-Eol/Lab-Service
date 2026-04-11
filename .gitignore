@@ -1,0 +1,55 @@
+# ==============================
+# 1. macOS 관련 파일
+# ==============================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ==============================
+# 2. Python & FastAPI (Backend)
+# ==============================
+# 파이썬 컴파일 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경 폴더 (매우 중요 ⭐ - 절대 깃허브에 올리면 안 됨)
+backend/venv/
+venv/
+env/
+.env
+
+# ==============================
+# 3. Node.js & React (Frontend)
+# ==============================
+# 의존성 모듈 (매우 중요 ⭐ - 용량이 너무 커서 올리면 안 됨)
+frontend/node_modules/
+node_modules/
+
+# 빌드 결과물
+frontend/dist/
+dist/
+build/
+
+# 환경 변수 (API 키 등 보안)
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# npm 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==============================
+# 4. 에디터 및 개발 도구
+# ==============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
