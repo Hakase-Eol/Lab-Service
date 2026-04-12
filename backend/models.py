@@ -23,7 +23,6 @@ class Lab(Base):
     field = Column(String(100), nullable=False)
     description = Column(Text)
     leader_id = Column(String(20), ForeignKey("users.student_id"), nullable=True)
-    capacity = Column(Integer, nullable=False, default=10)
 
     members = relationship("User", foreign_keys=[User.lab_id], back_populates="lab")
     applications = relationship("Application", back_populates="lab")
