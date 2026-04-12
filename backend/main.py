@@ -39,3 +39,20 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     
     # 3. 없다면 새 유저로 DB에 저장 (crud.py의 함수 사용)
     return crud.create_user(db=db, user=user)
+
+@app.post("/users/login")
+def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
+    # 1. crud.py에 만든 함수로 검증 시도
+    authenticated_user = crud.authenticate_user(db, student_id=user.student_id, password=user.password)
+    
+    # 2. 실패했다면 401(권한 없음) 에러 발생
+    if not authenticated_user:
+        raise HTTPException(status_code=401, detail="학번이나 비밀번호가 일치하지 않습니다.")
+    
+    # 3. 성공했다면 환영 메시지와 권한(role) 반환
+    # JWT 토큰 추후 구현
+    return {
+        "message": f"환영해요, {authenticated_user.name}님!",
+        "student_id": authenticated_user.student_id,
+        "role": authenticated_user.role
+    }

@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     password: str
     name: str
 
-# 2. 회원가입 성공 후 프론트엔드에 돌려줄 데이터 양식 (응답 - 비밀번호 제외!)
+# 2. 회원가입 성공 후 프론트엔드에 돌려줄 데이터 양식 (응답 - 비밀번호 제외)
 class UserResponse(BaseModel):
     student_id: str
     name: str
@@ -14,3 +14,8 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # DB 모델(SQLAlchemy)을 Pydantic 모델로 부드럽게 변환해 줌
+
+# 3. 로그인할 때 프론트엔드에서 보내줘야 하는 데이터 양식
+class UserLogin(BaseModel):
+    student_id: str
+    password: str
