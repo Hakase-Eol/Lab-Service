@@ -33,3 +33,26 @@ def authenticate_user(db: Session, student_id: str, password: str):
     
     # 3. 둘 다 맞으면 찾은 유저 정보를 그대로 반환
     return user
+
+# 4. 랩실 생성 및 랩장 권한 부여 (Create & Update)
+def create_lab(db: Session, lab: schemas.LabCreate):
+    # 1) 새로운 랩실 데이터를 DB에 저장
+    db_lab = models.Lab(
+        name=lab.name,
+        field=lab.field,
+        description=lab.description,
+        leader_id=lab.leader_id
+    )
+    db.add(db_lab)
+    db.commit()
+    db.refresh(db_lab) # 생성된 랩실의 ID(lab_id)를 받아옴
+    
+    # 2) 랩실을 만든 유저를 찾아서 정보를 수정(Update)
+    user = get_user_by_student_id(db, lab.leader_id)
+    if user:
+        user.role = "leader"          # 권한을 랩장으로 승급
+        user.lab_id = db_lab.lab_id   # 소속 랩실 지정
+        db.commit()
+        db.refresh(user)
+        
+    return db_lab

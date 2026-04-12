@@ -56,3 +56,17 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "student_id": authenticated_user.student_id,
         "role": authenticated_user.role
     }
+
+@app.post("/labs", response_model=schemas.LabResponse)
+def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db)):
+    # 1. 랩실을 만들려는 유저(학번)가 진짜로 존재하는지 확인
+    user = crud.get_user_by_student_id(db, student_id=lab.leader_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="해당 학번의 유저를 찾을 수 없습니다.")
+    
+    # 2. 이미 다른 랩실에 소속된 사람(또는 이미 랩장인 사람)은 새로 만들 수 없게 차단
+    if user.lab_id is not None:
+        raise HTTPException(status_code=400, detail="이미 소속된 랩실이 있어 새로운 랩실을 만들 수 없습니다.")
+    
+    # 3. 모든 검사를 통과하면 랩실 생성
+    return crud.create_lab(db=db, lab=lab)

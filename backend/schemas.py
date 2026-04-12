@@ -19,3 +19,20 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     student_id: str
     password: str
+
+# 4. 랩실 생성 요청 양식
+class LabCreate(BaseModel):
+    name: str
+    field: str           # 연구 분야
+    description: str     # 랩실 설명
+    leader_id: str       # 랩실을 만드는 사람의 학번
+
+# 5. 랩실 생성 응답 양식
+class LabResponse(BaseModel):
+    lab_id: int
+    name: str
+    field: str
+    leader_id: str
+
+    class Config:
+        from_attributes = True
