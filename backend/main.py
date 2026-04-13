@@ -70,3 +70,19 @@ def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db)):
     
     # 3. 모든 검사를 통과하면 랩실 생성
     return crud.create_lab(db=db, lab=lab)
+
+@app.post("/labs/members", response_model=schemas.UserResponse)
+def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db)):
+    # crud 함수 실행
+    result = crud.add_lab_member(db, leader_id=req.leader_id, student_id=req.student_id)
+    
+    # 결과에 따라 에러 처리
+    if result == "NOT_LEADER":
+        raise HTTPException(status_code=403, detail="랩장 권한이 없거나 소속된 랩실이 없습니다.")
+    if result == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail="추가할 학생의 학번을 찾을 수 없습니다.")
+    if result == "ALREADY_IN_LAB":
+        raise HTTPException(status_code=400, detail="해당 학생은 이미 랩실에 소속되어 있습니다.")
+        
+    # 성공하면 추가된 학생의 정보 반환
+    return result

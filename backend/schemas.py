@@ -36,3 +36,8 @@ class LabResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# 6. 랩실 멤버 추가 요청 양식
+class MemberAdd(BaseModel):
+    leader_id: str     # 초대를 보내는 랩장의 학번
+    student_id: str    # 랩실에 추가할 학생의 학번

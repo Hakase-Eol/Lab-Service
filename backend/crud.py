@@ -56,3 +56,26 @@ def create_lab(db: Session, lab: schemas.LabCreate):
         db.refresh(user)
         
     return db_lab
+
+# 5. 랩실 멤버 추가하기 (Update)
+def add_lab_member(db: Session, leader_id: str, student_id: str):
+    # 1. 요청한 사람이 진짜 랩장이 맞는지, 랩실이 있는지 확인
+    leader = get_user_by_student_id(db, leader_id)
+    if not leader or leader.role != "leader" or leader.lab_id is None:
+        return "NOT_LEADER"
+    
+    # 2. 추가할 학생이 DB에 존재하는지 확인
+    student = get_user_by_student_id(db, student_id)
+    if not student:
+        return "NOT_FOUND"
+    
+    # 3. 추가할 학생이 이미 다른 랩실(또는 내 랩실)에 소속되어 있는지 확인
+    if student.lab_id is not None:
+        return "ALREADY_IN_LAB"
+        
+    # 4. 모든 검사를 통과하면 학생의 lab_id를 랩장의 lab_id로 업데이트
+    student.lab_id = leader.lab_id
+    db.commit()
+    db.refresh(student)
+    
+    return student
