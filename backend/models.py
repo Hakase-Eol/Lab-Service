@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Date, DateTime, func
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Date, DateTime, func, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -11,7 +11,7 @@ class User(Base):
     role = Column(String(20), default="student") # student, leader, admin 등
     lab_id = Column(Integer, ForeignKey("labs.lab_id"), nullable=True)
 
-    # 관계 설정 (N:1, 1:N 등을 객체로 쉽게 접근하기 위함)
+    # 관계 설정
     lab = relationship("Lab", foreign_keys=[lab_id], back_populates="members")
     applications = relationship("Application", back_populates="applicant")
 
@@ -42,13 +42,14 @@ class Application(Base):
     applicant = relationship("User", back_populates="applications")
     lab = relationship("Lab", back_populates="applications")
 
+# 랩실 일정 테이블 (정리 완료)
 class Schedule(Base):
     __tablename__ = "schedules"
 
-    schedule_id = Column(Integer, primary_key=True, autoincrement=True)
-    lab_id = Column(Integer, ForeignKey("labs.lab_id"), nullable=False)
+    schedule_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    lab_id = Column(Integer, ForeignKey("labs.lab_id"), index=True, nullable=False)
     title = Column(String(200), nullable=False)
-    event_date = Column(Date, nullable=False)
+    date = Column(String(50), nullable=False)
 
     lab = relationship("Lab", back_populates="schedules")
     attendances = relationship("Attendance", back_populates="schedule")
@@ -74,3 +75,19 @@ class Finance(Base):
     record_date = Column(Date, nullable=False)
 
     lab = relationship("Lab", back_populates="finances")
+
+# 랩실 회비 청구 테이블 (랩장이 만듦)
+class Fee(Base):
+    __tablename__ = "fees"
+    fee_id = Column(Integer, primary_key=True, index=True)
+    lab_id = Column(Integer, index=True)
+    title = Column(String(100)) # 청구 제목 (예: "5월 랩실 회비")
+    amount = Column(Integer)    # 금액 (예: 10000)
+
+# 학생별 회비 납부 내역 테이블 (누가 냈고 안 냈는지 체크)
+class FeePayment(Base):
+    __tablename__ = "fee_payments"
+    payment_id = Column(Integer, primary_key=True, index=True)
+    fee_id = Column(Integer, index=True)
+    student_id = Column(String(20))
+    is_paid = Column(Boolean, default=False) # 기본값은 '미납(False)'

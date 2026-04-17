@@ -41,3 +41,27 @@ class LabResponse(BaseModel):
 class MemberAdd(BaseModel):
     leader_id: str     # 초대를 보내는 랩장의 학번
     student_id: str    # 랩실에 추가할 학생의 학번
+
+# --- 일정 관련 양식 ---
+class ScheduleCreate(BaseModel):
+    title: str
+    date: str
+
+class ScheduleResponse(BaseModel):
+    schedule_id: int
+    lab_id: int
+    title: str
+    date: str
+    class Config: from_attributes = True
+
+# --- 회비 관련 양식 ---
+class FeeCreate(BaseModel):
+    title: str
+    amount: int
+
+class FeeResponse(BaseModel):
+    fee_id: int
+    lab_id: int
+    title: str
+    amount: int
+    class Config: from_attributes = True

@@ -59,7 +59,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
 @app.post("/labs", response_model=schemas.LabResponse)
 def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db)):
-    # 1. 랩실을 만들려는 유저(학번)가 진짜로 존재하는지 확인
+    # 1. 랩실을 만들려는 유저(학번)가 존재하는지 확인
     user = crud.get_user_by_student_id(db, student_id=lab.leader_id)
     if not user:
         raise HTTPException(status_code=404, detail="해당 학번의 유저를 찾을 수 없습니다.")
@@ -94,3 +94,33 @@ def read_all_labs(db: Session = Depends(get_db)):
     
     # 가져온 목록을 그대로 프론트엔드에 전달 (만약 없으면 빈 배열 []이 반환됨)
     return labs
+
+# ==========================================
+# 랩실 일정 API
+# ==========================================
+@app.post("/labs/{lab_id}/schedules", response_model=schemas.ScheduleResponse)
+def create_schedule(lab_id: int, schedule: schemas.ScheduleCreate, db: Session = Depends(get_db)):
+    return crud.create_schedule(db, lab_id, schedule)
+
+@app.get("/labs/{lab_id}/schedules", response_model=list[schemas.ScheduleResponse])
+def get_schedules(lab_id: int, db: Session = Depends(get_db)):
+    return crud.get_schedules(db, lab_id)
+
+# ==========================================
+# 랩실 회비 API
+# ==========================================
+# 1. 랩장이 회비 청구
+@app.post("/labs/{lab_id}/fees", response_model=schemas.FeeResponse)
+def create_fee(lab_id: int, fee: schemas.FeeCreate, db: Session = Depends(get_db)):
+    return crud.create_fee(db, lab_id, fee)
+
+# 2. 학생이 납부 확인 버튼 클릭
+@app.put("/fees/{fee_id}/pay")
+def pay_fee(fee_id: int, student_id: str, db: Session = Depends(get_db)):
+    crud.pay_fee(db, fee_id, student_id)
+    return {"message": "회비 납부 처리가 완료되었습니다!"}
+
+# 3. 랩장이 멤버들 납부 현황 조회
+@app.get("/fees/{fee_id}/status")
+def get_fee_status(fee_id: int, db: Session = Depends(get_db)):
+    return crud.get_fee_status(db, fee_id)
