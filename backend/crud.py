@@ -79,3 +79,7 @@ def add_lab_member(db: Session, leader_id: str, student_id: str):
     db.refresh(student)
     
     return student
+
+# 6. 전체 랩실 목록 조회 (Read)
+def get_all_labs(db: Session):
+    return db.query(models.Lab).all() # Lab 테이블의 모든 데이터를 반환.

@@ -86,3 +86,11 @@ def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db)):
         
     # 성공하면 추가된 학생의 정보 반환
     return result
+
+@app.get("/labs", response_model=list[schemas.LabResponse])
+def read_all_labs(db: Session = Depends(get_db)):
+    # crud.py에서 만든 함수로 모든 랩실 데이터를 가져옴
+    labs = crud.get_all_labs(db)
+    
+    # 가져온 목록을 그대로 프론트엔드에 전달 (만약 없으면 빈 배열 []이 반환됨)
+    return labs
