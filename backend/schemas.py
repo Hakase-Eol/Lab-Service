@@ -83,3 +83,28 @@ class Finance(FinanceBase):
 
     class Config:
         from_attributes = True
+
+# --- 회비 청구 (Fee) 스키마 ---
+class FeeBase(BaseModel):
+    title: str
+    amount: int
+
+class FeeCreate(FeeBase):
+    pass
+
+class Fee(FeeBase):
+    fee_id: int
+    lab_id: int
+
+    class Config:
+        from_attributes = True
+
+# 회비 납부 현황 조회용 스키마
+class FeePaymentInfo(BaseModel):
+    payment_id: int
+    fee_id: int
+    student_id: str
+    is_paid: bool
+
+    class Config:
+        from_attributes = True

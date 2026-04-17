@@ -153,3 +153,41 @@ def create_finance_record(db: Session, lab_id: int, finance: schemas.FinanceCrea
 # 특정 랩실의 장부 내역 전체 조회
 def get_finances_by_lab(db: Session, lab_id: int):
     return db.query(models.Finance).filter(models.Finance.lab_id == lab_id).all()
+
+# --- 회비 청구 CRUD ---
+
+# 회비 청구서 생성 및 학생별 미납 내역 자동 생성
+def create_fee_for_lab(db: Session, lab_id: int, fee: schemas.FeeCreate):
+    # 1. 청구서 레코드 생성
+    db_fee = models.Fee(
+        lab_id=lab_id,
+        title=fee.title,
+        amount=fee.amount
+    )
+    db.add(db_fee)
+    db.commit()
+    db.refresh(db_fee)
+    
+    # 2. 해당 랩실에 속한 학생들(Users) 모두 조회
+    lab_members = db.query(models.User).filter(models.User.lab_id == lab_id).all()
+    
+    # 3. 학생마다 납부 내역(FeePayment) 레코드를 '미납(False)' 상태로 일괄 생성
+    for member in lab_members:
+        db_payment = models.FeePayment(
+            fee_id=db_fee.fee_id,
+            student_id=member.student_id,
+            is_paid=False
+        )
+        db.add(db_payment)
+    
+    db.commit() # 한 번에 커밋해서 저장
+    
+    return db_fee
+
+# 특정 랩실의 전체 회비 목록 조회
+def get_fees_by_lab(db: Session, lab_id: int):
+    return db.query(models.Fee).filter(models.Fee.lab_id == lab_id).all()
+
+# 특정 회비에 대한 학생들 납부 현황 조회
+def get_fee_payments(db: Session, fee_id: int):
+    return db.query(models.FeePayment).filter(models.FeePayment.fee_id == fee_id).all()

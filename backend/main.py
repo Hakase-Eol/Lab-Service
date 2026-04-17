@@ -136,3 +136,20 @@ def create_finance(lab_id: int, finance: schemas.FinanceCreate, db: Session = De
 def read_finances(lab_id: int, db: Session = Depends(get_db)):
     """특정 랩실의 장부 내역을 조회합니다."""
     return crud.get_finances_by_lab(db, lab_id=lab_id)
+
+# --- 회비 청구 (Fee) API ---
+
+@app.post("/labs/{lab_id}/fees", response_model=schemas.Fee)
+def create_fee(lab_id: int, fee: schemas.FeeCreate, db: Session = Depends(get_db)):
+    """새로운 회비를 청구하고, 랩실 소속 학생들의 납부 내역(미납)을 자동 생성합니다."""
+    return crud.create_fee_for_lab(db=db, lab_id=lab_id, fee=fee)
+
+@app.get("/labs/{lab_id}/fees", response_model=list[schemas.Fee])
+def read_fees(lab_id: int, db: Session = Depends(get_db)):
+    """특정 랩실의 회비 청구 목록을 조회합니다."""
+    return crud.get_fees_by_lab(db, lab_id=lab_id)
+
+@app.get("/fees/{fee_id}/payments", response_model=list[schemas.FeePaymentInfo])
+def read_fee_payments(fee_id: int, db: Session = Depends(get_db)):
+    """특정 회비에 대한 학생들의 납부 현황을 조회합니다."""
+    return crud.get_fee_payments(db, fee_id=fee_id)
