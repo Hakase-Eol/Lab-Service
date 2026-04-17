@@ -124,3 +124,15 @@ def pay_fee(fee_id: int, student_id: str, db: Session = Depends(get_db)):
 @app.get("/fees/{fee_id}/status")
 def get_fee_status(fee_id: int, db: Session = Depends(get_db)):
     return crud.get_fee_status(db, fee_id)
+
+# --- 장부(Finance) API ---
+
+@app.post("/labs/{lab_id}/finances", response_model=schemas.Finance)
+def create_finance(lab_id: int, finance: schemas.FinanceCreate, db: Session = Depends(get_db)):
+    """특정 랩실에 수입/지출 내역을 기록합니다."""
+    return crud.create_finance_record(db=db, lab_id=lab_id, finance=finance)
+
+@app.get("/labs/{lab_id}/finances", response_model=list[schemas.Finance])
+def read_finances(lab_id: int, db: Session = Depends(get_db)):
+    """특정 랩실의 장부 내역을 조회합니다."""
+    return crud.get_finances_by_lab(db, lab_id=lab_id)

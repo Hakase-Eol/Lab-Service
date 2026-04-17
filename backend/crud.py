@@ -133,3 +133,23 @@ def get_fee_status(db: Session, fee_id: int):
             "is_paid": "✅ 납부완료" if p.is_paid else "❌ 미납"
         })
     return result
+
+# --- 장부(Finance) CRUD ---
+
+# 장부 내역 추가
+def create_finance_record(db: Session, lab_id: int, finance: schemas.FinanceCreate):
+    db_finance = models.Finance(
+        lab_id=lab_id,
+        type=finance.type,
+        amount=finance.amount,
+        description=finance.description,
+        record_date=finance.record_date
+    )
+    db.add(db_finance)
+    db.commit()
+    db.refresh(db_finance)
+    return db_finance
+
+# 특정 랩실의 장부 내역 전체 조회
+def get_finances_by_lab(db: Session, lab_id: int):
+    return db.query(models.Finance).filter(models.Finance.lab_id == lab_id).all()

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import date
 
 # 1. 회원가입할 때 프론트엔드에서 보내줘야 하는 데이터 양식 (요청)
 class UserCreate(BaseModel):
@@ -65,3 +66,20 @@ class FeeResponse(BaseModel):
     title: str
     amount: int
     class Config: from_attributes = True
+
+# --- 장부 스키마 ---
+class FinanceBase(BaseModel):
+    type: str  # "income"(수입) 또는 "expense"(지출)
+    amount: int
+    description: str | None = None
+    record_date: date
+
+class FinanceCreate(FinanceBase):
+    pass
+
+class Finance(FinanceBase):
+    finance_id: int
+    lab_id: int
+
+    class Config:
+        from_attributes = True
