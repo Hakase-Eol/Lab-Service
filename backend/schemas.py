@@ -128,3 +128,22 @@ class Application(ApplicationBase):
 
     class Config:
         from_attributes = True
+
+# --- 유저 & 인증 (User & Auth) 스키마 ---
+class UserCreate(BaseModel):
+    student_id: str
+    password: str
+    name: str
+
+class UserResponse(BaseModel):
+    student_id: str
+    name: str
+    lab_id: int | None = None
+    role: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

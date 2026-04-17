@@ -1,3 +1,6 @@
+import jwt
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 import models, schemas
 
@@ -225,3 +228,49 @@ def update_application_status(db: Session, app_id: int, status: str):
         db.commit()
         db.refresh(db_app)
     return db_app
+
+# --- 유저 & 인증 (User & Auth) 로직 ---
+
+# 비밀번호 암호화 설정
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT 토큰 설정 (실제 서비스에서는 SECRET_KEY를 복잡하게 설정하고 환경변수로 숨겨야 해!)
+SECRET_KEY = "my_super_secret_lab_key_123"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 하루(24시간) 동안 유지
+
+# 1. 학번으로 유저 찾기
+def get_user_by_student_id(db: Session, student_id: str):
+    return db.query(models.User).filter(models.User.student_id == student_id).first()
+
+# 2. 회원가입 (비밀번호 암호화해서 저장)
+def create_user(db: Session, user: schemas.UserCreate):
+    hashed_password = pwd_context.hash(user.password)
+    db_user = models.User(
+        student_id=user.student_id,
+        password=hashed_password,  # 모델에 정의된 비밀번호 컬럼 이름에 맞게 조정해줘!
+        name=user.name,
+        role="student" # 기본값은 학생
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+# 3. 로그인 토큰 생성
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# 4. 로그인 검증 (학번과 비밀번호가 맞는지 체크)
+def authenticate_user(db: Session, student_id: str, password: str):
+    user = get_user_by_student_id(db, student_id)
+    if not user:
+        return False
+    # DB에 저장된 암호화된 비밀번호와 입력한 비밀번호 비교
+    if not pwd_context.verify(password, user.password):
+        return False
+    return user
