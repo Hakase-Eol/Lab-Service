@@ -191,3 +191,37 @@ def get_fees_by_lab(db: Session, lab_id: int):
 # 특정 회비에 대한 학생들 납부 현황 조회
 def get_fee_payments(db: Session, fee_id: int):
     return db.query(models.FeePayment).filter(models.FeePayment.fee_id == fee_id).all()
+
+# --- 랩실 가입 신청 (Application) CRUD ---
+
+# 1. 가입 신청서 작성
+def create_application(db: Session, lab_id: int, application: schemas.ApplicationCreate):
+    db_app = models.Application(
+        lab_id=lab_id,
+        student_id=application.student_id,
+        content=application.content
+    )
+    db.add(db_app)
+    db.commit()
+    db.refresh(db_app)
+    return db_app
+
+# 2. 특정 랩실의 전체 신청서 목록 조회
+def get_applications_by_lab(db: Session, lab_id: int):
+    return db.query(models.Application).filter(models.Application.lab_id == lab_id).all()
+
+# 3. 신청 상태 변경 (승인/거절 처리)
+def update_application_status(db: Session, app_id: int, status: str):
+    db_app = db.query(models.Application).filter(models.Application.app_id == app_id).first()
+    if db_app:
+        db_app.status = status
+        
+        # 랩장이 'approved'(승인) 처리했다면, 해당 학생의 소속 랩실 정보(lab_id)를 업데이트!
+        if status == "approved":
+            student = db.query(models.User).filter(models.User.student_id == db_app.student_id).first()
+            if student:
+                student.lab_id = db_app.lab_id
+        
+        db.commit()
+        db.refresh(db_app)
+    return db_app

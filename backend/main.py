@@ -153,3 +153,20 @@ def read_fees(lab_id: int, db: Session = Depends(get_db)):
 def read_fee_payments(fee_id: int, db: Session = Depends(get_db)):
     """특정 회비에 대한 학생들의 납부 현황을 조회합니다."""
     return crud.get_fee_payments(db, fee_id=fee_id)
+
+# --- 랩실 가입 신청 (Application) API ---
+
+@app.post("/labs/{lab_id}/applications", response_model=schemas.Application)
+def apply_to_lab(lab_id: int, application: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+    """학생이 특정 랩실에 가입 신청서를 제출합니다."""
+    return crud.create_application(db=db, lab_id=lab_id, application=application)
+
+@app.get("/labs/{lab_id}/applications", response_model=list[schemas.Application])
+def read_lab_applications(lab_id: int, db: Session = Depends(get_db)):
+    """랩장이 특정 랩실에 들어온 가입 신청서 목록을 확인합니다."""
+    return crud.get_applications_by_lab(db, lab_id=lab_id)
+
+@app.put("/applications/{app_id}/status", response_model=schemas.Application)
+def update_application_status(app_id: int, status_update: schemas.ApplicationUpdateStatus, db: Session = Depends(get_db)):
+    """랩장이 특정 신청서의 상태를 'approved' 또는 'rejected'로 변경합니다."""
+    return crud.update_application_status(db=db, app_id=app_id, status=status_update.status)

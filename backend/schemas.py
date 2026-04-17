@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 
 # 1. 회원가입할 때 프론트엔드에서 보내줘야 하는 데이터 양식 (요청)
 class UserCreate(BaseModel):
@@ -105,6 +105,26 @@ class FeePaymentInfo(BaseModel):
     fee_id: int
     student_id: str
     is_paid: bool
+
+    class Config:
+        from_attributes = True
+
+# --- 랩실 가입 신청 (Application) 스키마 ---
+class ApplicationBase(BaseModel):
+    student_id: str
+    content: str  # 지원 동기나 자기소개 등
+
+class ApplicationCreate(ApplicationBase):
+    pass
+
+class ApplicationUpdateStatus(BaseModel):
+    status: str  # "approved" 또는 "rejected"
+
+class Application(ApplicationBase):
+    app_id: int
+    lab_id: int
+    status: str
+    applied_at: datetime | None = None
 
     class Config:
         from_attributes = True
