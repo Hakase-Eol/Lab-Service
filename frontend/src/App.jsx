@@ -2,7 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles'; // 테마 도구 불러오기
 import Login from './Login';
 import Dashboard from './Dashboard';
+import MyLab from './MyLab';
+import Schedule from './Schedule';
 import Layout from './Layout';
+import Finance from './Finance';
 
 const theme = createTheme({
   palette: {
@@ -16,18 +19,21 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'Pretendard, sans-serif', // 폰트도 깔끔하게 설정 (있다면 적용됨)
+    fontFamily: 'Pretendard, sans-serif',
   },
 });
 
 function App() {
   return (
-    <ThemeProvider theme={theme}> {/* 테마를 하위 컴포넌트들에 전달 */}
+    <ThemeProvider theme={theme}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/lab" element={<MyLab />} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/finance" element={<Finance />} />
           </Route>
         </Routes>
       </BrowserRouter>
