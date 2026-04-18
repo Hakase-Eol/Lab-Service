@@ -1,23 +1,27 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, TextField, Box, Typography, Container, Paper } from '@mui/material';
 import api from './api';
 
 function Login() {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // 백엔드가 OAuth2 형식을 쓰기 때문에 URLSearchParams로 변환해서 전송해야 함
       const formData = new URLSearchParams();
       formData.append('username', studentId);
       formData.append('password', password);
 
       const response = await api.post('/users/login', formData);
       
-      // 로그인 성공 시 localStorage에 토큰 저장
       localStorage.setItem('token', response.data.access_token);
-      alert('로그인 성공! 토큰을 발급받았습니다.');
+      
+      // 로그인 성공 시 알림을 띄우고 대시보드 화면으로 이동
+      alert('로그인 성공!');
+      navigate('/dashboard'); 
     } catch (error) {
       alert('로그인 실패: 학번이나 비밀번호를 확인해주세요.');
       console.error(error);
@@ -25,30 +29,43 @@ function Login() {
   };
 
   return (
-    <div style={{ padding: '20px', border: '1px solid #ccc', width: '300px', margin: '20px auto' }}>
-      <h2>로그인</h2>
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: '10px' }}>
-          <input 
-            type="text" 
-            placeholder="학번" 
-            value={studentId} 
-            onChange={(e) => setStudentId(e.target.value)} 
-            style={{ width: '100%', padding: '5px' }}
+    <Container component="main" maxWidth="xs">
+      {/* Paper는 그림자가 지는 깔끔한 카드 모양을 만들어줘 */}
+      <Paper elevation={3} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', borderRadius: 2 }}>
+        <Typography component="h1" variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+          랩실 관리 시스템
+        </Typography>
+        <Box component="form" onSubmit={handleLogin} sx={{ mt: 1, width: '100%' }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="학번"
+            autoFocus
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
           />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <input 
-            type="password" 
-            placeholder="비밀번호" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            style={{ width: '100%', padding: '5px' }}
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="비밀번호"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
-        </div>
-        <button type="submit" style={{ width: '100%', padding: '10px' }}>로그인</button>
-      </form>
-    </div>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            size="large"
+            sx={{ mt: 3, mb: 2, py: 1.5, fontWeight: 'bold' }}
+          >
+            로그인
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 }
 
