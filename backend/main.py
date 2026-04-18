@@ -23,7 +23,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     
     try:
         # 1. crud.py에서 토큰을 만들 때 썼던 비밀키(SECRET_KEY)로 암호 해제
-        # crud.py에 SECRET_KEY와 ALGORITHM 변수가 정의되어 있어야 함)
         payload = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         
         # 2. 해독한 데이터 안에서 'sub'(우리가 넣었던 학번)를 꺼낸다.
@@ -95,7 +94,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def create_lab(
     lab: schemas.LabCreate, 
     db: Session = Depends(get_db), 
-    current_user: models.User = Depends(get_current_user) # 토큰에서 유저를 뽑아옴
+    current_user: models.User = Depends(get_current_user) # 👈 토큰에서 유저를 뽑아옴
 ):
     # 1. 랩실 소속 여부 등 권한 확인
     if current_user.lab_id is not None:
@@ -108,11 +107,14 @@ def create_lab(
 
 @app.get("/labs", response_model=list[schemas.LabResponse])
 def read_all_labs(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    """단순 조회는 로그인 여부(문지기)만 확인"""
     return crud.get_all_labs(db)
 
 @app.post("/labs/members", response_model=schemas.UserResponse)
-def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    result = crud.add_lab_member(db, leader_id=req.leader_id, student_id=req.student_id)
+def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """랩장이 랩실에 멤버를 추가합니다."""
+    # req.leader_id 대신 토큰에서 꺼낸 current_user.student_id 사용
+    result = crud.add_lab_member(db, leader_id=current_user.student_id, student_id=req.student_id)
     if result == "NOT_LEADER":
         raise HTTPException(status_code=403, detail="랩장 권한이 없거나 소속된 랩실이 없습니다.")
     if result == "NOT_FOUND":
@@ -125,8 +127,10 @@ def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db), token:
 # 3. 랩실 가입 신청 (Application) API
 # ==========================================
 @app.post("/labs/{lab_id}/applications", response_model=schemas.Application)
-def apply_to_lab(lab_id: int, application: schemas.ApplicationCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+def apply_to_lab(lab_id: int, application: schemas.ApplicationCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """학생이 특정 랩실에 가입 신청서를 제출합니다."""
+    # 토큰에서 읽어낸 진짜 학번을 신청서 학번으로 강제 덮어쓰기
+    application.student_id = current_user.student_id
     return crud.create_application(db=db, lab_id=lab_id, application=application)
 
 @app.get("/labs/{lab_id}/applications", response_model=list[schemas.Application])
@@ -164,9 +168,10 @@ def read_fees(lab_id: int, db: Session = Depends(get_db), token: str = Depends(o
     return crud.get_fees_by_lab(db, lab_id=lab_id)
 
 @app.put("/fees/{fee_id}/pay")
-def pay_fee(fee_id: int, student_id: str, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    """학생이 납부 확인 버튼 클릭 시 처리"""
-    crud.pay_fee(db, fee_id, student_id)
+def pay_fee(fee_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """학생이 납부 확인 버튼 클릭 시 처리 (학번은 토큰에서 자동 추출)"""
+    # 프론트에서 학번을 안 보내줘도, 서버가 토큰을 해독해서 알아서 처리
+    crud.pay_fee(db, fee_id, current_user.student_id)
     return {"message": "회비 납부 처리가 완료되었습니다!"}
 
 @app.get("/fees/{fee_id}/payments", response_model=list[schemas.FeePaymentInfo])
