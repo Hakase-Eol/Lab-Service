@@ -1,3 +1,17 @@
+/* 1. 인터넷에서 스포카 한 산스 네오 폰트 불러오기 */
+@import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
+
+/* 2. 모든 요소에 폰트 적용 (sans-serif는 따옴표 없이 씁니다!) */
+* {
+  font-family: 'Spoqa Han Sans Neo', sans-serif !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fdfbfb; 
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
