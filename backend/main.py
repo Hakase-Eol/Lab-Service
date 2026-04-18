@@ -35,7 +35,7 @@ def read_root():
 # ==========================================
 @app.post("/users/signup", response_model=schemas.UserResponse)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """새로운 학생 또는 랩장으로 회원가입합니다."""
+    """새로운 학생 또는 랩장으로 회원가입합니다. (자물쇠 없음 - 아무나 가능)"""
     db_user = crud.get_user_by_student_id(db, student_id=user.student_id)
     if db_user:
         raise HTTPException(status_code=400, detail="이미 가입된 학번입니다.")
@@ -43,7 +43,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/users/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """학번(username 칸에 입력)과 비밀번호로 로그인하여 토큰을 발급받습니다."""
+    """학번(username 칸에 입력)과 비밀번호로 로그인하여 토큰을 발급받습니다. (자물쇠 없음)"""
     user = crud.authenticate_user(db, student_id=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
@@ -58,7 +58,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 # 2. 랩실 관리 (Lab) API
 # ==========================================
 @app.post("/labs", response_model=schemas.LabResponse)
-def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db)):
+def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     user = crud.get_user_by_student_id(db, student_id=lab.leader_id)
     if not user:
         raise HTTPException(status_code=404, detail="해당 학번의 유저를 찾을 수 없습니다.")
@@ -71,7 +71,7 @@ def read_all_labs(db: Session = Depends(get_db), token: str = Depends(oauth2_sch
     return crud.get_all_labs(db)
 
 @app.post("/labs/members", response_model=schemas.UserResponse)
-def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db)):
+def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     result = crud.add_lab_member(db, leader_id=req.leader_id, student_id=req.student_id)
     if result == "NOT_LEADER":
         raise HTTPException(status_code=403, detail="랩장 권한이 없거나 소속된 랩실이 없습니다.")
@@ -85,17 +85,17 @@ def add_lab_member(req: schemas.MemberAdd, db: Session = Depends(get_db)):
 # 3. 랩실 가입 신청 (Application) API
 # ==========================================
 @app.post("/labs/{lab_id}/applications", response_model=schemas.Application)
-def apply_to_lab(lab_id: int, application: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+def apply_to_lab(lab_id: int, application: schemas.ApplicationCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """학생이 특정 랩실에 가입 신청서를 제출합니다."""
     return crud.create_application(db=db, lab_id=lab_id, application=application)
 
 @app.get("/labs/{lab_id}/applications", response_model=list[schemas.Application])
-def read_lab_applications(lab_id: int, db: Session = Depends(get_db)):
+def read_lab_applications(lab_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """랩장이 특정 랩실에 들어온 가입 신청서 목록을 확인합니다."""
     return crud.get_applications_by_lab(db, lab_id=lab_id)
 
 @app.put("/applications/{app_id}/status", response_model=schemas.Application)
-def update_application_status(app_id: int, status_update: schemas.ApplicationUpdateStatus, db: Session = Depends(get_db)):
+def update_application_status(app_id: int, status_update: schemas.ApplicationUpdateStatus, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """랩장이 특정 신청서의 상태를 'approved' 또는 'rejected'로 변경합니다."""
     return crud.update_application_status(db=db, app_id=app_id, status=status_update.status)
 
@@ -103,34 +103,34 @@ def update_application_status(app_id: int, status_update: schemas.ApplicationUpd
 # 4. 일정 관리 (Schedule) API
 # ==========================================
 @app.post("/labs/{lab_id}/schedules", response_model=schemas.ScheduleResponse)
-def create_schedule(lab_id: int, schedule: schemas.ScheduleCreate, db: Session = Depends(get_db)):
+def create_schedule(lab_id: int, schedule: schemas.ScheduleCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     return crud.create_schedule(db, lab_id, schedule)
 
 @app.get("/labs/{lab_id}/schedules", response_model=list[schemas.ScheduleResponse])
-def get_schedules(lab_id: int, db: Session = Depends(get_db)):
+def get_schedules(lab_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     return crud.get_schedules(db, lab_id)
 
 # ==========================================
 # 5. 회비 관리 (Fee) API
 # ==========================================
 @app.post("/labs/{lab_id}/fees", response_model=schemas.Fee)
-def create_fee(lab_id: int, fee: schemas.FeeCreate, db: Session = Depends(get_db)):
+def create_fee(lab_id: int, fee: schemas.FeeCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """새로운 회비를 청구하고, 랩실 소속 학생들의 납부 내역(미납)을 자동 생성합니다."""
     return crud.create_fee_for_lab(db=db, lab_id=lab_id, fee=fee)
 
 @app.get("/labs/{lab_id}/fees", response_model=list[schemas.Fee])
-def read_fees(lab_id: int, db: Session = Depends(get_db)):
+def read_fees(lab_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """특정 랩실의 회비 청구 목록을 조회합니다."""
     return crud.get_fees_by_lab(db, lab_id=lab_id)
 
 @app.put("/fees/{fee_id}/pay")
-def pay_fee(fee_id: int, student_id: str, db: Session = Depends(get_db)):
+def pay_fee(fee_id: int, student_id: str, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """학생이 납부 확인 버튼 클릭 시 처리"""
     crud.pay_fee(db, fee_id, student_id)
     return {"message": "회비 납부 처리가 완료되었습니다!"}
 
 @app.get("/fees/{fee_id}/payments", response_model=list[schemas.FeePaymentInfo])
-def read_fee_payments(fee_id: int, db: Session = Depends(get_db)):
+def read_fee_payments(fee_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """특정 회비에 대한 학생들의 납부 현황을 조회합니다."""
     return crud.get_fee_payments(db, fee_id=fee_id)
 
@@ -138,11 +138,11 @@ def read_fee_payments(fee_id: int, db: Session = Depends(get_db)):
 # 6. 장부 관리 (Finance) API
 # ==========================================
 @app.post("/labs/{lab_id}/finances", response_model=schemas.Finance)
-def create_finance(lab_id: int, finance: schemas.FinanceCreate, db: Session = Depends(get_db)):
+def create_finance(lab_id: int, finance: schemas.FinanceCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """특정 랩실에 수입/지출 내역을 기록합니다."""
     return crud.create_finance_record(db=db, lab_id=lab_id, finance=finance)
 
 @app.get("/labs/{lab_id}/finances", response_model=list[schemas.Finance])
-def read_finances(lab_id: int, db: Session = Depends(get_db)):
+def read_finances(lab_id: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """특정 랩실의 장부 내역을 조회합니다."""
     return crud.get_finances_by_lab(db, lab_id=lab_id)
