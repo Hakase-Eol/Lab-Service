@@ -4,10 +4,44 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base, get_db
 from sqlalchemy.orm import Session
 import models, schemas, crud
+from jose import JWTError, jwt
 
 app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+
+# ==========================================
+# 현재 로그인한 유저를 알아내는 보안 함수
+# ==========================================
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    # 토큰이 이상하거나 주인을 찾을 수 없을 때 뱉어낼 에러
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="로그인이 풀렸거나 유효하지 않은 토큰입니다.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        # 1. crud.py에서 토큰을 만들 때 썼던 비밀키(SECRET_KEY)로 암호 해제
+        # crud.py에 SECRET_KEY와 ALGORITHM 변수가 정의되어 있어야 함)
+        payload = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
+        
+        # 2. 해독한 데이터 안에서 'sub'(우리가 넣었던 학번)를 꺼낸다.
+        student_id: str = payload.get("sub")
+        if student_id is None:
+            raise credentials_exception
+            
+    except JWTError:
+        # 토큰이 위조되었거나 만료되었으면 에러
+        raise credentials_exception
+        
+    # 3. 해독해서 얻은 학번으로 DB에서 진짜 유저 데이터를 가져온다.
+    user = crud.get_user_by_student_id(db, student_id=student_id)
+    if user is None:
+        raise credentials_exception
+        
+    # 4. 방금 로그인한 그 유저의 정보(models.User)를 반환
+    return user
 
 # 테이블 자동 생성
 models.Base.metadata.create_all(bind=engine)
@@ -58,12 +92,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 # 2. 랩실 관리 (Lab) API
 # ==========================================
 @app.post("/labs", response_model=schemas.LabResponse)
-def create_lab(lab: schemas.LabCreate, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = crud.get_user_by_student_id(db, student_id=lab.leader_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="해당 학번의 유저를 찾을 수 없습니다.")
-    if user.lab_id is not None:
+def create_lab(
+    lab: schemas.LabCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user) # 토큰에서 유저를 뽑아옴
+):
+    # 1. 랩실 소속 여부 등 권한 확인
+    if current_user.lab_id is not None:
         raise HTTPException(status_code=400, detail="이미 소속된 랩실이 있어 새로운 랩실을 만들 수 없습니다.")
+    
+    # 2. 토큰에서 읽어낸 진짜 학번을 랩장 ID로 강제 고정 (프론트에서 위조 불가능)
+    lab.leader_id = current_user.student_id 
+    
     return crud.create_lab(db=db, lab=lab)
 
 @app.get("/labs", response_model=list[schemas.LabResponse])
